@@ -9,6 +9,8 @@ import com.epam.model.car.Engine;
 import com.epam.model.HybridCar;
 import com.epam.model.OilCar;
 import com.epam.model.OilType;
+import com.epam.model.car.TechRecord;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import javax.persistence.EntityManager;
@@ -18,28 +20,44 @@ import javax.persistence.Persistence;
 import javax.persistence.Query;
 
 public class AppRunner {
-
+    
     public static void main(String[] args) {
-        //String persistenceUnit = "HibernatePostgreSQL";
+        String persistenceUnit = "HibernatePostgreSQL";
         //String persistenceUnit = "EclipseLinkPostgreSQL";
         //String persistenceUnit = "EclipseLinkMySQL";
-        String persistenceUnit = "HiberanteMySQL";
+        //String persistenceUnit = "HiberanteMySQL";
         EntityManagerFactory emf = Persistence.createEntityManagerFactory(persistenceUnit);
         EntityManager em = emf.createEntityManager();
         EntityTransaction et = em.getTransaction();
-
+        
         OilCar oilCar = constructOilCar();
         ElectricCar electricCar = constructElectricCar();
-        HybridCar hybridCar = constructHybridCar();        
-
-        Query q = em.createQuery("select c from Car c");
-        List<Car> cars = q.getResultList();
-        cars.stream()        
+        HybridCar hybridCar = constructHybridCar();
+        hybridCar.getTechRecords().add(
+                new TechRecord("Check oil", new Date(), "Been"));
+        hybridCar.getTechRecords().add(
+                new TechRecord("Check accumulator", new Date(), "Been"));
+        
+        Query carsQuery = em.createQuery("select c from Car c");
+        List<Car> cars = carsQuery.getResultList();
+        cars.stream()
                 //.filter(c -> Objects.equals(c.getModel(), "Zap"))
-                .peek(System.out::println)
+                //.peek(System.out::println)
+                .forEach(System.out::println);
+        
+        cars.stream()
+                .flatMap(c -> c.getTechRecords().stream())
+                .filter(tr -> "Been".equals(tr.getAuthor()))
+                .forEach(tr -> tr.setAuthor("Mr. Been"));
+        
+        Query engineQuery = em.createQuery("select e from Engine e");
+        List<Engine> engines = engineQuery.getResultList();
+        engines.stream()
+                .map(e -> e.getCar())
                 .forEach(c -> c.setCarOwnerSurname("Rodionov"));
-        //Car car = cars.get(0);
-
+        
+        //engines.get(0).getCar().setEngine(engines.get(1));
+        
         et.begin();
         try {
             em.persist(oilCar);
@@ -54,12 +72,11 @@ public class AppRunner {
             emf.close();
         }
     }
-
+    
     private static OilCar constructOilCar() {
         OilCar oilCar = new OilCar();
-        oilCar.setModel("BMW");
-        oilCar.setPower(400);
-        oilCar.setEngine(new Engine("BMW", 30));
+        oilCar.setModel("BMW");       
+        oilCar.setEngine(new Engine("BMW", 30, 400));
         oilCar.setCarType(CarType.JEEP);
         oilCar.setCarOwnerName("Andii");
         oilCar.setCarOwnerSurname("Rod");
@@ -71,9 +88,8 @@ public class AppRunner {
     
     private static ElectricCar constructElectricCar() {
         ElectricCar electricCar = new ElectricCar();
-        electricCar.setModel("Tesla");
-        electricCar.setPower(400);
-        electricCar.setEngine(new Engine("Tesla", 0));
+        electricCar.setModel("Tesla");     
+        electricCar.setEngine(new Engine("Tesla", 0, 200));
         electricCar.setCarType(CarType.CLASSIC);
         electricCar.setCarOwnerName("Andii");
         electricCar.setCarOwnerSurname("Rod");
@@ -85,9 +101,8 @@ public class AppRunner {
     
     private static HybridCar constructHybridCar() {
         HybridCar hybridCar = new HybridCar();
-        hybridCar.setModel("Sedan");
-        hybridCar.setPower(400);
-        hybridCar.setEngine(new Engine("GM", 10));
+        hybridCar.setModel("Sedan");      
+        hybridCar.setEngine(new Engine("GM", 10, 300));
         hybridCar.setCarType(CarType.JEEP);
         hybridCar.setCarOwnerName("Andii");
         hybridCar.setCarOwnerSurname("Rod");
@@ -97,5 +112,5 @@ public class AppRunner {
         hybridCar.setOilType(OilType.GAS);        
         return hybridCar;
     }
-
+    
 }
