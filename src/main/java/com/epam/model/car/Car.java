@@ -3,7 +3,9 @@ package com.epam.model.car;
 import com.epam.model.utils.ColorConvertor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -22,6 +24,10 @@ import javax.persistence.Index;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.Lob;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.SecondaryTable;
@@ -31,10 +37,10 @@ import javax.persistence.UniqueConstraint;
 import javax.persistence.Version;
 
 @Entity
-@Table(name = "Car",
-        indexes = {@Index(columnList = "model,Engine_ID", name = "model_engine")},
-        uniqueConstraints = {@UniqueConstraint(name = "model_engine_const", columnNames = {"model", "Engine_ID"})}
-)
+//@Table(name = "Car",
+//        indexes = {@Index(columnList = "model,Engine_ID", name = "model_engine")},
+//        uniqueConstraints = {@UniqueConstraint(name = "model_engine_const", columnNames = {"model", "Engine_ID"})}
+//)
 @SecondaryTable(name = "CarOwner", pkJoinColumns = @PrimaryKeyJoinColumn(name = "Car_ID"))
 //@DiscriminatorColumn(name = "Type")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -42,11 +48,20 @@ public abstract class Car {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private String model;    
+    
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "car_model_id")
+    private CarModel model;    
     
     @OneToOne(cascade = CascadeType.PERSIST, orphanRemoval = true)
     @JoinColumn(name = "Engine_ID")
     private Engine engine;
+    
+    @ManyToMany(cascade = CascadeType.PERSIST)
+    @JoinTable(name = "cars_detailes",
+            joinColumns = @JoinColumn(name = "car_id"),
+            inverseJoinColumns = @JoinColumn(name = "detail_id"))
+    private Set<Detail> detailes = new HashSet<>();
     
     @Enumerated(EnumType.STRING)
     private CarType carType;
@@ -59,6 +74,7 @@ public abstract class Car {
     @Transient
     private Long carId;
     //@Column(columnDefinition = "CLOB NOT NULL")
+    @Lob
     private byte[] photo;
     @Convert(converter = ColorConvertor.class)
     private CarColor color;
@@ -71,16 +87,16 @@ public abstract class Car {
     public Car() {
     } 
 
-    public Car(String model, Integer power, Engine engine) {
+    public Car(CarModel model, Integer power, Engine engine) {
         this.model = model;      
         this.engine = engine;
     }
 
-    public String getModel() {
+    public CarModel getModel() {
         return model;
     }
 
-    public void setModel(String model) {
+    public void setModel(CarModel model) {
         this.model = model;
     }
 
@@ -138,6 +154,14 @@ public abstract class Car {
 
     public void setTechRecords(List<TechRecord> techRecords) {
         this.techRecords = techRecords;
+    }    
+
+    public Set<Detail> getDetailes() {
+        return detailes;
+    }
+
+    public void setDetailes(Set<Detail> detailes) {
+        this.detailes = detailes;
     }    
     
     @Override
